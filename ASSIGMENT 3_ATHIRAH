@@ -1,134 +1,222 @@
-# -------------------------------
+# ---------------------------------
 # Airline Ticket Reservation System
-# -------------------------------
+# ---------------------------------
+# Main logic:
+# This system allows users to book airline seats, view seat availability,
+# cancel bookings, search passenger details, and save/load booking records.
 
 # 5x6 seat layout (0 = available, 1 = booked)
 seats = [[0 for _ in range(6)] for _ in range(5)]
 
+# List to store passenger objects
 passengers = []
 
-# -------------------------------
+# ---------------------------------
 # Passenger Class (OOP)
-# -------------------------------
+# ---------------------------------
 class Passenger:
+    """
+    Represents a passenger booking.
+    """
     def __init__(self, name, seat_number, flight_code):
         self.name = name
         self.seat_number = seat_number
         self.flight_code = flight_code
 
-
-# -------------------------------
+# ---------------------------------
 # View Seats
-# -------------------------------
+# ---------------------------------
 def view_seats():
+    """
+    Display the current seat availability with headers.
+    """
     print("\nSeat Layout (O = Available, X = Booked)")
-    for i in range(5):
-        for j in range(6):
-            if seats[i][j] == 0:
-                print("O", end=" ")
-            else:
-                print("X", end=" ")
+    print("   1 2 3 4 5 6")  # Column headers
+    for idx, row in enumerate(seats, start=1):
+        print(f"{idx}  ", end="")  # Row number
+        for seat in row:
+            print("O" if seat == 0 else "X", end=" ")
         print()
     print()
 
-
-# -------------------------------
+# ---------------------------------
 # Book Ticket
-# -------------------------------
+# ---------------------------------
 def book_ticket():
-    name = input("Enter passenger name: ")
-    flight = input("Enter flight code: ")
+    """
+    Books a ticket by assigning an available seat to a passenger.
+    Prints the updated passenger list after booking.
+    """
+    name = input("Enter passenger name: ").strip()
+    if not name:
+        print("Name cannot be empty.\n")
+        return
+
+    flight = input("Enter flight code: ").strip()
+    if not flight:
+        print("Flight code cannot be empty.\n")
+        return
 
     view_seats()
 
-    row = int(input("Enter row (1-5): ")) - 1
-    col = int(input("Enter column (1-6): ")) - 1
+    try:
+        row = int(input("Enter row (1-5): ")) - 1
+        col = int(input("Enter column (1-6): ")) - 1
 
-    if seats[row][col] == 0:
-        seats[row][col] = 1
-        seat_number = f"R{row+1}C{col+1}"
-        passenger = Passenger(name, seat_number, flight)
-        passengers.append(passenger)
-        print("Booking successful!\n")
-    else:
-        print("Seat already booked.\n")
+        if not (0 <= row < 5 and 0 <= col < 6):
+            print("Invalid seat selection.\n")
+            return
 
+        if seats[row][col] == 0:
+            seats[row][col] = 1
+            seat_number = f"R{row + 1}C{col + 1}"
+            passengers.append(Passenger(name, seat_number, flight))
+            print(f"Booking successful! Seat {seat_number} assigned.\n")
 
-# -------------------------------
-# Cancel Booking
-# -------------------------------
+            # Print current passenger list
+            print("Current Bookings:")
+            for p in passengers:
+                print(f"Name: {p.name}, Seat: {p.seat_number}, Flight: {p.flight_code}")
+            print()
+
+        else:
+            print("Seat already booked. Please choose another seat.\n")
+
+    except ValueError:
+        print("Invalid input. Please enter numbers for row and column.\n")
+
+# ---------------------------------
+# Cancel Booking (syncs with loaded bookings)
+# ---------------------------------
 def cancel_booking():
-    name = input("Enter passenger name to cancel: ")
+    """
+    Cancels a booking, frees the assigned seat,
+    removes the passenger from the current list AND updates the saved file.
+    Prints the updated passenger list.
+    """
+    name = input("Enter passenger name to cancel: ").strip()
+    if not name:
+        print("Name cannot be empty.\n")
+        return
+
+    found = False
 
     for p in passengers:
         if p.name.lower() == name.lower():
-            row = int(p.seat_number[1]) - 1
-            col = int(p.seat_number[3]) - 1
+            # Free the seat
+            row = int(p.seat_number.split("C")[0][1:]) - 1
+            col = int(p.seat_number.split("C")[1]) - 1
             seats[row][col] = 0
+
+            # Remove from passenger list
             passengers.remove(p)
-            print("Booking cancelled.\n")
-            return
+            print(f"Booking for {p.name} has been cancelled.\n")
+            found = True
 
-    print("Passenger not found.\n")
+            # Update the saved bookings file immediately
+            with open("bookings.txt", "w") as file:
+                for p2 in passengers:
+                    file.write(f"{p2.name},{p2.seat_number},{p2.flight_code}\n")
 
+            # Print current passenger list
+            if passengers:
+                print("Current Bookings:")
+                for p2 in passengers:
+                    print(f"Name: {p2.name}, Seat: {p2.seat_number}, Flight: {p2.flight_code}")
+                print()
+            else:
+                print("No passengers currently booked.\n")
+            break
 
-# -------------------------------
+    if not found:
+        print("Passenger not found.\n")
+
+# ---------------------------------
 # Search Passenger
-# -------------------------------
+# ---------------------------------
 def search_passenger():
-    name = input("Enter passenger name to search: ")
+    """
+    Searches for a passenger by name.
+    """
+    name = input("Enter passenger name to search: ").strip()
+    found = False
 
     for p in passengers:
         if p.name.lower() == name.lower():
             print("\nPassenger Found:")
-            print("Name:", p.name)
-            print("Seat:", p.seat_number)
-            print("Flight:", p.flight_code, "\n")
-            return
+            print(f"Name: {p.name}")
+            print(f"Seat: {p.seat_number}")
+            print(f"Flight: {p.flight_code}\n")
+            found = True
+            break
 
-    print("Passenger not found.\n")
+    if not found:
+        print("Passenger not found.\n")
 
-
-# -------------------------------
-# Save Bookings (File Handling)
-# -------------------------------
+# ---------------------------------
+# Save Bookings
+# ---------------------------------
 def save_bookings():
+    """
+    Saves all bookings to a text file and prints the saved passengers.
+    """
+    if not passengers:
+        print("No bookings to save.\n")
+        return
+
     with open("bookings.txt", "w") as file:
         for p in passengers:
             file.write(f"{p.name},{p.seat_number},{p.flight_code}\n")
-    print("✅ Bookings saved to file.\n")
+
+    print("Bookings successfully saved.\n")
+    print("Saved Bookings:")
+    for p in passengers:
+        print(f"Name: {p.name}, Seat: {p.seat_number}, Flight: {p.flight_code}")
+    print()
 
 
-# -------------------------------
 # Load Bookings
-# -------------------------------
+# ---------------------------------
 def load_bookings():
-    passengers.clear()
-    for i in range(5):
-        for j in range(6):
-            seats[i][j] = 0
-
+    """
+    Loads bookings from the file 'bookings.txt', updates the in-memory seat map
+    and passengers list, and prints the current bookings.
+    """
     try:
         with open("bookings.txt", "r") as file:
+            # Clear current data
+            passengers.clear()
+            for i in range(5):
+                for j in range(6):
+                    seats[i][j] = 0  # Reset seats
+
+            # Load each passenger from the file
             for line in file:
                 name, seat, flight = line.strip().split(",")
-                passenger = Passenger(name, seat, flight)
-                passengers.append(passenger)
-
-                row = int(seat[1]) - 1
-                col = int(seat[3]) - 1
+                row = int(seat.split("C")[0][1:]) - 1
+                col = int(seat.split("C")[1]) - 1
                 seats[row][col] = 1
+                passengers.append(Passenger(name, seat, flight))
 
-        print("Bookings loaded from file.\n")
+        print("Bookings successfully loaded.\n")
+
+        # Print current bookings
+        if passengers:
+            print("Loaded Bookings:")
+            for p in passengers:
+                print(f"Name: {p.name}, Seat: {p.seat_number}, Flight: {p.flight_code}")
+            print()
+        else:
+            print("No passengers currently booked.\n")
+
     except FileNotFoundError:
-        print("No booking file found.\n")
+        print("No saved bookings found.\n")
 
-
-# -------------------------------
+# ---------------------------------
 # Main Menu
-# -------------------------------
+# ---------------------------------
 while True:
-    print("AIRLINE TICKET RESERVATION SYSTEM")
+    print("=== AIRLINE TICKET RESERVATION SYSTEM ===")
     print("1. Book a Ticket")
     print("2. View Available Seats")
     print("3. Cancel Booking")
@@ -137,7 +225,7 @@ while True:
     print("6. Load Bookings")
     print("7. Exit")
 
-    choice = input("Enter your choice: ")
+    choice = input("Enter your choice (1-7): ").strip()
 
     if choice == "1":
         book_ticket()
@@ -156,3 +244,5 @@ while True:
         break
     else:
         print("Invalid choice. Try again.\n")
+
+
