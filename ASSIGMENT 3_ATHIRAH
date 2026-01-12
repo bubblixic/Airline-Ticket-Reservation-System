@@ -1,0 +1,158 @@
+# -------------------------------
+# Airline Ticket Reservation System
+# -------------------------------
+
+# 5x6 seat layout (0 = available, 1 = booked)
+seats = [[0 for _ in range(6)] for _ in range(5)]
+
+passengers = []
+
+# -------------------------------
+# Passenger Class (OOP)
+# -------------------------------
+class Passenger:
+    def __init__(self, name, seat_number, flight_code):
+        self.name = name
+        self.seat_number = seat_number
+        self.flight_code = flight_code
+
+
+# -------------------------------
+# View Seats
+# -------------------------------
+def view_seats():
+    print("\nSeat Layout (O = Available, X = Booked)")
+    for i in range(5):
+        for j in range(6):
+            if seats[i][j] == 0:
+                print("O", end=" ")
+            else:
+                print("X", end=" ")
+        print()
+    print()
+
+
+# -------------------------------
+# Book Ticket
+# -------------------------------
+def book_ticket():
+    name = input("Enter passenger name: ")
+    flight = input("Enter flight code: ")
+
+    view_seats()
+
+    row = int(input("Enter row (1-5): ")) - 1
+    col = int(input("Enter column (1-6): ")) - 1
+
+    if seats[row][col] == 0:
+        seats[row][col] = 1
+        seat_number = f"R{row+1}C{col+1}"
+        passenger = Passenger(name, seat_number, flight)
+        passengers.append(passenger)
+        print("Booking successful!\n")
+    else:
+        print("Seat already booked.\n")
+
+
+# -------------------------------
+# Cancel Booking
+# -------------------------------
+def cancel_booking():
+    name = input("Enter passenger name to cancel: ")
+
+    for p in passengers:
+        if p.name.lower() == name.lower():
+            row = int(p.seat_number[1]) - 1
+            col = int(p.seat_number[3]) - 1
+            seats[row][col] = 0
+            passengers.remove(p)
+            print("Booking cancelled.\n")
+            return
+
+    print("Passenger not found.\n")
+
+
+# -------------------------------
+# Search Passenger
+# -------------------------------
+def search_passenger():
+    name = input("Enter passenger name to search: ")
+
+    for p in passengers:
+        if p.name.lower() == name.lower():
+            print("\nPassenger Found:")
+            print("Name:", p.name)
+            print("Seat:", p.seat_number)
+            print("Flight:", p.flight_code, "\n")
+            return
+
+    print("Passenger not found.\n")
+
+
+# -------------------------------
+# Save Bookings (File Handling)
+# -------------------------------
+def save_bookings():
+    with open("bookings.txt", "w") as file:
+        for p in passengers:
+            file.write(f"{p.name},{p.seat_number},{p.flight_code}\n")
+    print("✅ Bookings saved to file.\n")
+
+
+# -------------------------------
+# Load Bookings
+# -------------------------------
+def load_bookings():
+    passengers.clear()
+    for i in range(5):
+        for j in range(6):
+            seats[i][j] = 0
+
+    try:
+        with open("bookings.txt", "r") as file:
+            for line in file:
+                name, seat, flight = line.strip().split(",")
+                passenger = Passenger(name, seat, flight)
+                passengers.append(passenger)
+
+                row = int(seat[1]) - 1
+                col = int(seat[3]) - 1
+                seats[row][col] = 1
+
+        print("Bookings loaded from file.\n")
+    except FileNotFoundError:
+        print("No booking file found.\n")
+
+
+# -------------------------------
+# Main Menu
+# -------------------------------
+while True:
+    print("AIRLINE TICKET RESERVATION SYSTEM")
+    print("1. Book a Ticket")
+    print("2. View Available Seats")
+    print("3. Cancel Booking")
+    print("4. Search Passenger")
+    print("5. Save Bookings")
+    print("6. Load Bookings")
+    print("7. Exit")
+
+    choice = input("Enter your choice: ")
+
+    if choice == "1":
+        book_ticket()
+    elif choice == "2":
+        view_seats()
+    elif choice == "3":
+        cancel_booking()
+    elif choice == "4":
+        search_passenger()
+    elif choice == "5":
+        save_bookings()
+    elif choice == "6":
+        load_bookings()
+    elif choice == "7":
+        print("Thank you for using the system!")
+        break
+    else:
+        print("Invalid choice. Try again.\n")
